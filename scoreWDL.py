@@ -1,4 +1,5 @@
 import argparse, json, matplotlib.pyplot as plt, numpy as np, time
+import os
 from ast import literal_eval
 from scipy.interpolate import griddata
 from scipy.optimize import curve_fit, minimize
@@ -99,9 +100,20 @@ class WdlData:
     def load_json_data(self, filenames):
         """load the WDL data from json: the keys describe the position (result, move, material, eval),
         and the values are the observed count of these positions"""
+        base_path = os.getcwd()
         for filename in filenames:
             print(f"Reading eval stats from {filename}.")
-            with open(filename) as infile:
+            fullpath = os.path.normpath(os.path.join(base_path, filename))
+            try:
+                common = os.path.commonpath([base_path, fullpath])
+            except ValueError:
+                # On some platforms, os.path.commonpath raises if paths are on different drives
+                print(f"Skipping file outside base directory: {filename}")
+                continue
+            if common != base_path:
+                print(f"Skipping file outside base directory: {filename}")
+                continue
+            with open(fullpath) as infile:
                 data = json.load(infile)
 
                 for key, value in data.items() if data else []:
