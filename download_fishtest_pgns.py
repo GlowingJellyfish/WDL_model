@@ -16,6 +16,18 @@ def open_file_rt(filename):
     return open_func(filename, "rt")
 
 
+def validate_username(username):
+    """
+    Validate the username used in API requests.
+    Only allow a restricted set of safe characters to avoid
+    manipulating the URL structure or query semantics.
+    """
+    # Allow common safe username characters: letters, digits, underscore, hyphen, dot, at-sign
+    if not re.fullmatch(r"[A-Za-z0-9_.@-]+", username):
+        raise ValueError(f"Invalid username '{username}'. Allowed characters are A-Z, a-z, 0-9, '_', '-', '.', '@'.")
+    return username
+
+
 def count_games(filename):
     count = 0
     with open_file_rt(filename) as f:
@@ -128,7 +140,8 @@ if args.success_only.lower() == "true":
 if args.yellow_only.lower() == "true":
     additional_query_params += "&yellow_only=1"
 if args.username is not None:
-    additional_query_params += f"&username={args.username}"
+    validated_username = validate_username(args.username)
+    additional_query_params += f"&username={validated_username}"
 standard_chess_only = args.standard_chess_only.lower() == "true"
 
 page = 1
