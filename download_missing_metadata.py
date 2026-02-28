@@ -44,7 +44,15 @@ for json_name in tests:
         print(f"File {json_name} exists already, skipping download.")
         continue
 
-    test = p.match(os.path.basename(json_name)).group(1)
+    test_match = p.match(os.path.basename(json_name))
+    if not test_match:
+        print(f"Warning: could not extract test id from {json_name}, skipping.")
+        continue
+    test = test_match.group(1)
+    # Validate test id to avoid using unexpected values in the request URL
+    if not re.fullmatch(r"[a-z0-9]+(-[0-9]+)?", test):
+        print(f"Warning: invalid test id '{test}' derived from {json_name}, skipping.")
+        continue
     url = "https://tests.stockfishchess.org/api/get_run/" + test
     try:
         meta = requests.get(url, timeout=30)
