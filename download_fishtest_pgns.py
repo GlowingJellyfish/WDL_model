@@ -16,6 +16,22 @@ def open_file_rt(filename):
     return open_func(filename, "rt")
 
 
+def safe_join(base_path, *paths):
+    """
+    Safely join one or more path components to a base directory.
+    Ensures the final normalized path stays within the base directory.
+    """
+    # Build the path and normalize to eliminate "..", ".", etc.
+    joined_path = os.path.normpath(os.path.join(base_path, *paths))
+    # Ensure the base path is absolute for reliable comparison
+    base_abs = os.path.abspath(base_path)
+    joined_abs = os.path.abspath(joined_path)
+    # Verify that the resulting path is within the base directory
+    if os.path.commonpath([base_abs, joined_abs]) != base_abs:
+        raise ValueError(f"Attempted directory traversal outside of base path: {joined_abs}")
+    return joined_abs
+
+
 def validate_username(username):
     """
     Validate the username used in API requests.
@@ -103,8 +119,9 @@ parser.add_argument(
 args = parser.parse_args()
 if args.path == "":
     args.path = "./"
-elif args.path[-1] != "/":
-    args.path += "/"
+
+# Normalize base path to an absolute directory path
+args.path = os.path.abspath(os.path.normpath(args.path))
 
 if not os.path.exists(args.path):
     os.makedirs(args.path)
@@ -182,9 +199,11 @@ while True:
 
     # download collective .pgn.gz for each test
     for test, dateStr, meta in ids:
-        path = args.path + dateStr + "/" + test + "/"
-        if not os.path.exists(args.path + dateStr):
-            os.makedirs(args.path + dateStr)
+        # Build per-date and per-test directories safely under the base path
+        date_dir = safe_join(args.path, dateStr)
+        path = safe_join(date_dir, test)
+        if not os.path.exists(date_dir):
+            os.makedirs(date_dir)
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -258,10 +277,12 @@ while True:
             tmpName = path + test + ".tmp"
             urllib.request.urlretrieve(url, tmpName)
             os.rename(tmpName, path + test + ".pgn.gz")
-            with open(path + test + ".json", "w") as jsonFile:
+            json_path = safe_join(path, test + ".json")
+            with open(json_path, "w") as jsonFile:
                 json.dump(meta, jsonFile, indent=4, sort_keys=True)
             if args.verbose:
-                g = count_games(path + test + ".pgn.gz")
+                pgn_path = safe_join(path, test + ".pgn.gz")
+                g = count_games(pgn_path)
                 print(f"Download completed. The file contains {g} games.", end="")
                 if games and g < games:
                     print(f" I.e. {games-g} fewer than expected.", end="")
