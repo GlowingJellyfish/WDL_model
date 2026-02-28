@@ -120,8 +120,15 @@ args = parser.parse_args()
 if args.path == "":
     args.path = "./"
 
+# Define a safe base directory (current working directory when the script starts)
+safe_base = os.path.abspath(os.getcwd())
+
 # Normalize base path to an absolute directory path
 args.path = os.path.abspath(os.path.normpath(args.path))
+
+# Ensure the requested path is within the safe base directory
+if os.path.commonpath([safe_base, args.path]) != safe_base:
+    raise ValueError(f"Refusing to use path outside of working directory: {args.path}")
 
 if not os.path.exists(args.path):
     os.makedirs(args.path)
