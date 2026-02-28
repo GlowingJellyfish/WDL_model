@@ -1,4 +1,4 @@
-import argparse, json, os, re, requests, time
+import argparse, json, os, re, requests, time, sys
 
 parser = argparse.ArgumentParser(
     description="Download fishtest metadata for any test that .pgn(.gz) files can be found for.",
@@ -20,7 +20,7 @@ args = parser.parse_args()
 
 if not os.path.exists(args.path):
     print(f"Error: directory {args.path} not found.")
-    exit
+    sys.exit(1)
 
 # find the set of downloaded Ids (looking in the full file tree)
 # match any filename of the form testId-runId.pgn(.gz) or testId.pgn(.gz)
